@@ -1,0 +1,210 @@
+<template>
+  <div class="pokemons">
+    <div class="title-page">Pokemon</div>
+    <div class="filter--container">
+      <label>Filter by Type</label>
+      <b-form-select
+        v-model="typeSelected"
+        :options="typeOptions"
+        :disabled="isFiltering"
+        @input="filterPokemons"
+      >
+        <template #first>
+          <b-form-select-option :value="null" disabled
+            >-- Please select an option --</b-form-select-option
+          >
+        </template>
+      </b-form-select>
+    </div>
+    <div class="pokemon-item--container">
+      <b-card
+        v-for="(item, index) in pokemons.results"
+        :key="index"
+        no-body
+        tag="article"
+        class="pokemon-item"
+      >
+        <b-card-body>
+          <b-card-img
+            :alt="`${item.name}'s image`"
+            :src="item.detail.sprites.other['official-artwork'].front_default"
+            @click="goToDetail(item)"
+          />
+          <b-card-title>{{ item.name }}</b-card-title>
+          <div class="pokemon-item--type">
+            <span
+              v-for="(typeItem, indexType) in item.detail.types"
+              :key="indexType"
+              @click="typeSelected = typeItem.type.url"
+              class="pokemon-type"
+              >{{ typeItem.type.name }}</span
+            >
+          </div>
+        </b-card-body>
+      </b-card>
+    </div>
+  </div>
+</template>
+
+<script>
+import { request, capitalize } from "@/utils";
+export default {
+  data() {
+    return {
+      pokemons: {
+        count: 0,
+        next: null,
+        previous: null,
+        results: []
+      },
+      loading: true,
+      types: {
+        count: 0,
+        next: null,
+        previous: null,
+        results: []
+      },
+      typeSelected: null,
+      typeOptions: [],
+      isFiltering: false // disable selection when filtering
+    };
+  },
+  created() {
+    this.fetchTypes();
+    this.fetchPokemons();
+  },
+  methods: {
+    goToDetail(item) {
+      this.$store.dispatch("setSelected", item);
+      this.$router.push({
+        name: "pokemon-detail",
+        params: {
+          name: item.name
+        }
+      });
+    },
+    bindDetailPokemons(items) {
+      items.forEach(item => {
+        request
+          .get(item.url)
+          .then(resItem => {
+            // just push it one by one, because we want to render it partially.
+            item.detail = resItem.data;
+            this.pokemons.results.push(item);
+          })
+          .catch(errors => {
+            console.log(errors);
+          });
+      });
+    },
+    fetchTypes() {
+      request.get("api/v2/type").then(res => {
+        this.types = res.data;
+        this.typeOptions = this.types.results.map(item => {
+          return {
+            value: item.url,
+            text: capitalize(item.name)
+          };
+        });
+      });
+    },
+    fetchPokemons() {
+      request
+        .get("api/v2/pokemon/")
+        .then(res => {
+          this.pokemons.count = res.data.count;
+          this.pokemons.next = res.data.next;
+          this.pokemons.previous = res.data.previous;
+          this.bindDetailPokemons(res.data.results);
+        })
+        .catch(err => {
+          console.log(err);
+        })
+        .finally(() => {
+          this.loading = false;
+        });
+    },
+    filterPokemons(url) {
+      this.isFiltering = true;
+      request
+        .get(url)
+        .then(res => {
+          this.pokemons.count = res.data.pokemon.length;
+          this.pokemons.next = null;
+          this.pokemons.previous = null;
+          const filteredPokemons = res.data.pokemon.map(item => item.pokemon);
+          this.pokemons.results = [];
+          this.bindDetailPokemons(filteredPokemons);
+        })
+        .catch(err => {
+          console.log(err);
+        })
+        .finally(() => {
+          this.isFiltering = false;
+        });
+    }
+  }
+};
+</script>
+
+<style lang="less">
+.pokemons {
+  padding: 30px 200px;
+  .title-page {
+    font-weight: bold;
+    font-size: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .filter--container {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0 20px;
+    margin-bottom: 20px;
+
+    label {
+      font-weight: bold;
+      margin-right: 20px;
+    }
+    select {
+      width: auto;
+    }
+  }
+  .pokemon-item--container {
+    display: block;
+    width: 100%;
+    height: 100%;
+
+    .pokemon-item {
+      display: inline-block;
+      width: 22%;
+      margin: 1.5%;
+      box-shadow: 0 3px 12px rgba(100, 100, 100, 0.3);
+      border-radius: 20px;
+
+      .card-body {
+        .card-img {
+          cursor: pointer;
+        }
+      }
+
+      .pokemon-item--type {
+        .pokemon-type {
+          margin-right: 10px;
+          background-color: rgba(0, 0, 0, 0.1);
+          border-radius: 40px;
+          font-size: 0.8em;
+          padding: 5px 10px;
+          transition: all ease 0.1s;
+
+          &:hover {
+            cursor: pointer;
+            background-color: rgba(0, 0, 0, 0.3);
+          }
+        }
+      }
+    }
+  }
+}
+</style>
