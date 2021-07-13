@@ -11,14 +11,14 @@ const router = new Router({
     {
       path: "/",
       name: "homepage",
-      component: asyncComponent("HomePage.vue")
+      component: asyncComponent("HomePage.vue"),
     },
     {
       path: "/pokemons/:name",
       name: "pokemon-detail",
-      component: asyncComponent("pokemon.vue")
-    }
-  ]
+      component: asyncComponent("pokemon.vue"),
+    },
+  ],
 });
 
 export default router;

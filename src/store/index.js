@@ -5,18 +5,34 @@ Vue.use(Vuex);
 
 export const store = new Vuex.Store({
   state: {
-    pokemon: {
-      selected: {}
-    }
+    selected: {
+      sprites: {
+        other: {
+          "official-artwork": {
+            front_default: "",
+          },
+        },
+      },
+      types: [],
+      stats: [],
+      abilities: [],
+    },
+    types: [],
   },
   mutations: {
     SET_SELECTED(state, payload) {
-      state.pokemon.selected = payload;
-    }
+      state.selected = payload;
+    },
+    SET_TYPES(state, payload) {
+      state.types = payload;
+    },
   },
   actions: {
     setSelected({ commit }, payload) {
       commit("SET_SELECTED", payload);
-    }
-  }
+    },
+    setTypes({ commit }, payload) {
+      commit("SET_TYPES", payload);
+    },
+  },
 });

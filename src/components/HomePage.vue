@@ -47,6 +47,7 @@
 </template>
 
 <script>
+import { mapState } from "vuex";
 import { request, capitalize } from "@/utils";
 export default {
   data() {
@@ -55,55 +56,54 @@ export default {
         count: 0,
         next: null,
         previous: null,
-        results: []
+        results: [],
       },
       loading: true,
-      types: {
-        count: 0,
-        next: null,
-        previous: null,
-        results: []
-      },
       typeSelected: null,
       typeOptions: [],
-      isFiltering: false // disable selection when filtering
+      isFiltering: false, // disable selection when filtering
     };
   },
   created() {
     this.fetchTypes();
     this.fetchPokemons();
   },
+  computed: {
+    ...mapState(["types"]),
+  },
   methods: {
     goToDetail(item) {
-      this.$store.dispatch("setSelected", item);
+      this.$store.dispatch("setSelected", item.detail);
       this.$router.push({
         name: "pokemon-detail",
         params: {
-          name: item.name
-        }
+          name: item.name,
+        },
       });
     },
     bindDetailPokemons(items) {
-      items.forEach(item => {
+      items.forEach((item) => {
         request
           .get(item.url)
-          .then(resItem => {
+          .then((resItem) => {
             // just push it one by one, because we want to render it partially.
             item.detail = resItem.data;
             this.pokemons.results.push(item);
           })
-          .catch(errors => {
+          .catch((errors) => {
             console.log(errors);
           });
       });
     },
     fetchTypes() {
-      request.get("api/v2/type").then(res => {
-        this.types = res.data;
-        this.typeOptions = this.types.results.map(item => {
+      request.get("api/v2/type").then((res) => {
+        // optimized types. So when user go to detail page
+        // and back to home page, it will not fetch api again.
+        this.$store.dispatch("setTypes", res.data.results);
+        this.typeOptions = res.data.results.map((item) => {
           return {
             value: item.url,
-            text: capitalize(item.name)
+            text: capitalize(item.name),
           };
         });
       });
@@ -111,13 +111,13 @@ export default {
     fetchPokemons() {
       request
         .get("api/v2/pokemon/")
-        .then(res => {
+        .then((res) => {
           this.pokemons.count = res.data.count;
           this.pokemons.next = res.data.next;
           this.pokemons.previous = res.data.previous;
           this.bindDetailPokemons(res.data.results);
         })
-        .catch(err => {
+        .catch((err) => {
           console.log(err);
         })
         .finally(() => {
@@ -128,28 +128,31 @@ export default {
       this.isFiltering = true;
       request
         .get(url)
-        .then(res => {
+        .then((res) => {
           this.pokemons.count = res.data.pokemon.length;
           this.pokemons.next = null;
           this.pokemons.previous = null;
-          const filteredPokemons = res.data.pokemon.map(item => item.pokemon);
+          const filteredPokemons = res.data.pokemon.map((item) => item.pokemon);
           this.pokemons.results = [];
           this.bindDetailPokemons(filteredPokemons);
         })
-        .catch(err => {
+        .catch((err) => {
           console.log(err);
         })
         .finally(() => {
           this.isFiltering = false;
         });
-    }
-  }
+    },
+  },
 };
 </script>
 
 <style lang="less">
 .pokemons {
   padding: 30px 200px;
+  @media (max-width: 576px) {
+    padding: 20px;
+  }
   .title-page {
     font-weight: bold;
     font-size: 20px;
@@ -183,9 +186,17 @@ export default {
       box-shadow: 0 3px 12px rgba(100, 100, 100, 0.3);
       border-radius: 20px;
 
+      @media (max-width: 576px) {
+        width: 100%;
+        margin: 20px 0;
+      }
+
       .card-body {
         .card-img {
           cursor: pointer;
+        }
+        .card-title {
+          text-transform: capitalize;
         }
       }
 
@@ -197,6 +208,7 @@ export default {
           font-size: 0.8em;
           padding: 5px 10px;
           transition: all ease 0.1s;
+          text-transform: capitalize;
 
           &:hover {
             cursor: pointer;
