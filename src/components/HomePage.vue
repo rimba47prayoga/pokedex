@@ -2,54 +2,40 @@
   <div class="pokemons">
     <div class="title-page">Pokemon</div>
     <div class="filter--container">
-      <label>Filter by Type</label>
-      <b-form-select
-        v-model="typeSelected"
-        :options="typeOptions"
-        :disabled="isFiltering"
-        @input="filterPokemons"
-      >
-        <template #first>
-          <b-form-select-option :value="null" disabled
-            >-- Please select an option --</b-form-select-option
-          >
-        </template>
-      </b-form-select>
+      <div class="input-container">
+        <label>Filter by Type</label>
+        <b-form-select
+          v-model="typeSelected"
+          :options="typeOptions"
+          :disabled="isFiltering"
+          @input="filterPokemons"
+        >
+          <template #first>
+            <b-form-select-option :value="null" disabled
+              >-- Please select an option --</b-form-select-option
+            >
+          </template>
+        </b-form-select>
+      </div>
     </div>
     <div class="pokemon-item--container">
-      <b-card
+      <pokemon-item
         v-for="(item, index) in pokemons.results"
         :key="index"
-        no-body
-        tag="article"
-        class="pokemon-item"
-      >
-        <b-card-body>
-          <b-card-img
-            :alt="`${item.name}'s image`"
-            :src="item.detail.sprites.other['official-artwork'].front_default"
-            @click="goToDetail(item)"
-          />
-          <b-card-title>{{ item.name }}</b-card-title>
-          <div class="pokemon-item--type">
-            <span
-              v-for="(typeItem, indexType) in item.detail.types"
-              :key="indexType"
-              @click="typeSelected = typeItem.type.url"
-              class="pokemon-type"
-              >{{ typeItem.type.name }}</span
-            >
-          </div>
-        </b-card-body>
-      </b-card>
+        :item="item"
+      ></pokemon-item>
     </div>
   </div>
 </template>
 
 <script>
 import { mapState } from "vuex";
+import PokemonItem from "./PokemonItem.vue";
 import { request, capitalize } from "@/utils";
 export default {
+  components: {
+    PokemonItem,
+  },
   data() {
     return {
       pokemons: {
@@ -72,15 +58,6 @@ export default {
     ...mapState(["types"]),
   },
   methods: {
-    goToDetail(item) {
-      this.$store.dispatch("setSelected", item.detail);
-      this.$router.push({
-        name: "pokemon-detail",
-        params: {
-          name: item.name,
-        },
-      });
-    },
     bindDetailPokemons(items) {
       items.forEach((item) => {
         request
@@ -88,7 +65,7 @@ export default {
           .then((resItem) => {
             // just push it one by one, because we want to render it partially.
             item.detail = resItem.data;
-            this.pokemons.results.push(item);
+            this.pokemons.results.push({ ...item, img_loaded: false });
           })
           .catch((errors) => {
             console.log(errors);
@@ -155,7 +132,7 @@ export default {
   }
   .title-page {
     font-weight: bold;
-    font-size: 20px;
+    font-size: 40px;
     text-align: center;
     margin-bottom: 20px;
   }
@@ -165,6 +142,15 @@ export default {
     align-items: center;
     padding: 0 20px;
     margin-bottom: 20px;
+
+    @media (max-width: 576px) {
+      justify-content: flex-start;
+    }
+
+    .input-container {
+      display: flex;
+      flex-direction: column;
+    }
 
     label {
       font-weight: bold;
@@ -178,7 +164,6 @@ export default {
     display: block;
     width: 100%;
     height: 100%;
-
     .pokemon-item {
       display: inline-block;
       width: 22%;
@@ -190,13 +175,20 @@ export default {
         width: 100%;
         margin: 20px 0;
       }
-
       .card-body {
         .card-img {
           cursor: pointer;
         }
         .card-title {
+          font-size: 20px;
           text-transform: capitalize;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+
+          a {
+            color: #343a40;
+          }
         }
       }
 

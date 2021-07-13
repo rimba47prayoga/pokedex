@@ -16,7 +16,7 @@ const router = new Router({
     {
       path: "/pokemons/:name",
       name: "pokemon-detail",
-      component: asyncComponent("pokemon.vue"),
+      component: asyncComponent("PokemonDetail.vue"),
     },
   ],
 });

@@ -3,7 +3,9 @@
     <b-card no-body class="overflow-hidden" style="max-width: 700px">
       <b-row no-gutters>
         <b-col md="6">
+          <b-skeleton v-if="loading" height="350px"></b-skeleton>
           <b-card-img
+            v-else
             :src="selected.sprites.other['official-artwork'].front_default"
             :alt="`${selected.name}'s image`"
             class="rounded-0"
@@ -18,7 +20,7 @@
                 class="row mb-1"
               >
                 <div class="col-md-12 stat-name">
-                  {{ item.name.split("-").join(" ") }}:
+                  {{ item.name.split("-").join(" ") }}
                 </div>
                 <div class="col-md-12 stat-value">
                   <b-progress
@@ -91,6 +93,7 @@ export default {
     return {
       abilities: [],
       weakness: [],
+      loading: false,
     };
   },
   beforeDestroy() {
@@ -99,11 +102,20 @@ export default {
   async mounted() {
     // When refresh page or user go directly to detail page
     const selected = this.selected;
-    if (!Object.keys(selected).length) {
+    if (!selected.types.length) {
+      this.loading = true;
       let name = this.$route.params.name;
-      await request.get(`api/v2/pokemon/${name}`).then((res) => {
-        this.$store.dispatch("setSelected", res.data);
-      });
+      await request
+        .get(`api/v2/pokemon/${name}`)
+        .then((res) => {
+          this.$store.dispatch("setSelected", res.data);
+        })
+        .catch((err) => {
+          console.log(err);
+        })
+        .finally(() => {
+          this.loading = false;
+        });
     }
     this.fetchAbilities(this.selected.abilities);
     this.fetchWeakness();
