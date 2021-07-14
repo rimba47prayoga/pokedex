@@ -3,6 +3,19 @@ import Vuex from "vuex";
 
 Vue.use(Vuex);
 
+const defaultSelectedState = {
+  sprites: {
+    other: {
+      "official-artwork": {
+        front_default: "",
+      },
+    },
+  },
+  types: [],
+  stats: [],
+  abilities: [],
+};
+
 export const store = new Vuex.Store({
   state: {
     selected: {
@@ -30,6 +43,9 @@ export const store = new Vuex.Store({
   actions: {
     setSelected({ commit }, payload) {
       commit("SET_SELECTED", payload);
+    },
+    setDefaultSelected({ commit }) {
+      commit("SET_SELECTED", defaultSelectedState);
     },
     setTypes({ commit }, payload) {
       commit("SET_TYPES", payload);

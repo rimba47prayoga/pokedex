@@ -4,7 +4,7 @@
       <b-card-img
         v-show="item.img_loaded"
         :alt="`${item.name}'s image`"
-        :src="item.detail.sprites.other['official-artwork'].front_default"
+        :src="getImage(item)"
         @click="goToDetail(item)"
         @load="onImageLoad(item)"
       />
@@ -17,12 +17,15 @@
         </router-link>
       </b-card-title>
       <div class="pokemon-item--type">
-        <span
+        <router-link
           v-for="(typeItem, indexType) in item.detail.types"
           :key="indexType"
-          @click="typeSelected = typeItem.type.url"
+          :to="{
+            name: 'homepage',
+            query: { type: typeItem.type.name },
+          }"
           class="pokemon-type"
-          >{{ typeItem.type.name }}</span
+          >{{ typeItem.type.name }}</router-link
         >
       </div>
     </b-card-body>
@@ -51,6 +54,13 @@ export default {
           name: item.name,
         },
       });
+    },
+    getImage(item) {
+      // const scrappedBaseUrl =
+      //   "https://assets.pokemon.com/assets/cms2/img/pokedex/full//";
+      // const index = String(item.detail.id).padStart("3", "0");
+      // return `${scrappedBaseUrl}${index}.png`;
+      return item.detail.sprites.other["official-artwork"].front_default;
     },
   },
 };

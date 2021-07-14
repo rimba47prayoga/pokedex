@@ -6,9 +6,9 @@
         <label>Filter by Type</label>
         <b-form-select
           v-model="typeSelected"
-          :options="typeOptions"
+          :options="types"
           :disabled="isFiltering"
-          @input="filterPokemons"
+          @input="selectType"
         >
           <template #first>
             <b-form-select-option :value="null" disabled
@@ -46,48 +46,73 @@ export default {
       },
       loading: true,
       typeSelected: null,
-      typeOptions: [],
-      isFiltering: false, // disable selection when filtering
+      isFiltering: false, // disable selection when filtering,
+      busy: true,
     };
   },
-  created() {
-    this.fetchTypes();
-    this.fetchPokemons();
+  async mounted() {
+    if (this.$route.query.type) {
+      await this.fetchTypes();
+      const type = this.types.filter(
+        (item) => item.text === capitalize(this.$route.query.type)
+      )[0];
+      this.typeSelected = type.value;
+      this.filterPokemons(type.value);
+    } else {
+      this.fetchTypes();
+      this.fetchPokemons();
+    }
+  },
+  beforeRouteUpdate(to, from, next) {
+    this.$nextTick(() => {
+      if (to.query.type) {
+        const type = this.types.filter(
+          (item) => item.text === capitalize(to.query.type)
+        )[0];
+        this.typeSelected = type.value;
+        this.filterPokemons(type.value);
+      }
+    });
+    next();
   },
   computed: {
     ...mapState(["types"]),
   },
   methods: {
     bindDetailPokemons(items) {
-      items.forEach((item) => {
-        request
+      let results = [];
+      items.forEach(async (item) => {
+        await request
           .get(item.url)
           .then((resItem) => {
             // just push it one by one, because we want to render it partially.
             item.detail = resItem.data;
-            this.pokemons.results.push({ ...item, img_loaded: false });
+            results.push({ ...item, img_loaded: false });
           })
           .catch((errors) => {
             console.log(errors);
           });
       });
+      this.pokemons.results = results;
     },
     fetchTypes() {
-      request.get("api/v2/type").then((res) => {
-        // optimized types. So when user go to detail page
-        // and back to home page, it will not fetch api again.
-        this.$store.dispatch("setTypes", res.data.results);
-        this.typeOptions = res.data.results.map((item) => {
-          return {
-            value: item.url,
-            text: capitalize(item.name),
-          };
+      if (!this.types.length) {
+        request.get("api/v2/type").then((res) => {
+          // optimized types. So when user go to detail page
+          // and back to home page, it will not fetch api again.
+          const types = res.data.results.map((item) => {
+            return {
+              value: item.url,
+              text: capitalize(item.name),
+            };
+          });
+          this.$store.dispatch("setTypes", types);
         });
-      });
+      }
     },
-    fetchPokemons() {
+    fetchPokemons(url = "api/v2/pokemon/") {
       request
-        .get("api/v2/pokemon/")
+        .get(url)
         .then((res) => {
           this.pokemons.count = res.data.count;
           this.pokemons.next = res.data.next;
@@ -119,6 +144,10 @@ export default {
         .finally(() => {
           this.isFiltering = false;
         });
+    },
+    selectType(url) {
+      const type = this.types.filter((item) => item.value === url)[0];
+      this.$router.push({ name: "homepage", query: { type: type.text } });
     },
   },
 };
@@ -201,6 +230,8 @@ export default {
           padding: 5px 10px;
           transition: all ease 0.1s;
           text-transform: capitalize;
+          text-decoration: none;
+          color: #333;
 
           &:hover {
             cursor: pointer;

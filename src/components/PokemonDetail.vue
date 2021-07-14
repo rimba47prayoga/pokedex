@@ -3,34 +3,55 @@
     <b-card no-body class="overflow-hidden" style="max-width: 700px">
       <b-row no-gutters>
         <b-col md="6">
-          <b-skeleton v-if="loading" height="350px"></b-skeleton>
+          <b-skeleton
+            v-if="loadingImage"
+            height="340px"
+            style="margin: 10px"
+          ></b-skeleton>
           <b-card-img
-            v-else
+            v-show="!loadingImage"
             :src="selected.sprites.other['official-artwork'].front_default"
             :alt="`${selected.name}'s image`"
+            @load="loadingImage = false"
             class="rounded-0"
           ></b-card-img>
         </b-col>
         <b-col md="6">
-          <b-card-body :title="selected.name">
-            <div class="stats">
-              <div
-                v-for="(item, index) in getStats"
-                :key="index"
-                class="row mb-1"
-              >
-                <div class="col-md-12 stat-name">
-                  {{ item.name.split("-").join(" ") }}
-                </div>
-                <div class="col-md-12 stat-value">
-                  <b-progress
-                    :value="item.value"
-                    :variant="item.colour"
-                    show-progress
-                  ></b-progress>
+          <b-card-body>
+            <template v-if="loading">
+              <b-card-title>
+                <b-skeleton
+                  class="mb-4"
+                  width="100px"
+                  height="20px"
+                ></b-skeleton>
+              </b-card-title>
+              <b-skeleton class="mb-4"></b-skeleton>
+              <b-skeleton class="mb-4"></b-skeleton>
+              <b-skeleton class="mb-4"></b-skeleton>
+              <b-skeleton class="mb-4"></b-skeleton>
+            </template>
+            <template v-else>
+              <b-card-title>{{ selected.name }}</b-card-title>
+              <div class="stats">
+                <div
+                  v-for="(item, index) in getStats"
+                  :key="index"
+                  class="row mb-1"
+                >
+                  <div class="col-md-12 stat-name">
+                    {{ item.name.split("-").join(" ") }}
+                  </div>
+                  <div class="col-md-12 stat-value">
+                    <b-progress
+                      :value="item.value"
+                      :variant="item.colour"
+                      show-progress
+                    ></b-progress>
+                  </div>
                 </div>
               </div>
-            </div>
+            </template>
           </b-card-body>
         </b-col>
       </b-row>
@@ -40,29 +61,45 @@
             <div class="attribute-items basic-attributes">
               <div class="attribute-item--container">
                 <span class="attribute-title">Height</span>
-                <span class="attribute-value">{{ selected.height }}</span>
+                <b-skeleton v-if="loading" width="30px"></b-skeleton>
+                <span v-else class="attribute-value">{{
+                  selected.height
+                }}</span>
               </div>
               <div class="attribute-item--container">
                 <span class="attribute-title">Weight</span>
-                <span class="attribute-value">{{ selected.weight }}</span>
+                <b-skeleton v-if="loading" width="30px"></b-skeleton>
+                <span v-else class="attribute-value">{{
+                  selected.weight
+                }}</span>
               </div>
             </div>
             <div class="attribute-items attribute-types">
               <div class="attribute-type--title">Types</div>
               <div class="attribute-type--items">
-                <span
+                <router-link
                   v-for="(typeItem, indexType) in selected.types"
                   :key="indexType"
-                  >{{ typeItem.type.name }}</span
+                  :to="{
+                    name: 'homepage',
+                    query: { type: typeItem.type.name },
+                  }"
+                  >{{ typeItem.type.name }}</router-link
                 >
               </div>
             </div>
             <div class="attribute-items attribute-weakness">
               <div class="attribute-type--title">Weakness</div>
               <div class="attribute-type--items">
-                <span v-for="(item, index) in weakness" :key="index">{{
-                  item.name
-                }}</span>
+                <router-link
+                  v-for="(item, index) in weakness"
+                  :key="index"
+                  :to="{
+                    name: 'homepage',
+                    query: { type: item.name },
+                  }"
+                  >{{ item.name }}</router-link
+                >
               </div>
             </div>
           </div>
@@ -94,10 +131,11 @@ export default {
       abilities: [],
       weakness: [],
       loading: false,
+      loadingImage: true,
     };
   },
   beforeDestroy() {
-    this.$store.dispatch("setSelected", {});
+    this.$store.dispatch("setDefaultSelected");
   },
   async mounted() {
     // When refresh page or user go directly to detail page
@@ -216,7 +254,7 @@ export default {
         .attribute-item--container {
           display: flex;
           flex-direction: column;
-          width: 50%;
+          margin-right: 50px;
 
           .attribute-title {
             font-weight: bold;
@@ -230,7 +268,7 @@ export default {
           margin-bottom: 10px;
         }
         .attribute-type--items {
-          span {
+          a {
             display: inline-block;
             margin: 5px;
             background-color: rgba(0, 0, 0, 0.1);
@@ -239,6 +277,8 @@ export default {
             padding: 5px 10px;
             transition: all ease 0.1s;
             text-transform: capitalize;
+            text-decoration: none;
+            color: #333;
 
             &:hover {
               cursor: pointer;
